@@ -3,7 +3,7 @@ local LLC, parent = torch.class('nn.LLC', 'nn.Module')
 function LLC:__init(B, lambda, sigma)
    parent.__init(self)
    -- dictionary
-   print(B)
+   -- print(B)
    if B == nil then
       self.B = torch.Tensor(
             {{0.0,0.2511,0.2511,0.2511,-10},

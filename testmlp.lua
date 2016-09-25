@@ -32,3 +32,10 @@ for i = 1,2500 do
   -- (3) update parameters with a 0.01 learning rate
   mlp:updateParameters(0.1)
 end
+
+x = torch.Tensor(2)
+x[1] =  0.5; x[2] =  0.5; print(mlp:forward(x))
+x[1] =  0.5; x[2] = -0.5; print(mlp:forward(x))
+x[1] = -0.5; x[2] =  0.5; print(mlp:forward(x))
+x[1] = -0.5; x[2] = -0.5; print(mlp:forward(x))
+

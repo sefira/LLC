@@ -19,13 +19,13 @@ criterion = nn.MSECriterion()
 
 function test()
    print(model:get(2).gradInput)
-   input = torch.ones(1,6,6)
+   input = torch.ones(1,5,5)
    print(model:forward(input))
    input = input*(-1)
    print(model:forward(input))
 end
 
-test()
+--test()
 a = torch.zeros(1)
 for i = 2000,2000 do
   -- random sample

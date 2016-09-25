@@ -50,7 +50,6 @@ function LLCNet:updateOutput(input)
    self.M = torch.zeros(input:size(2),input:size(3),self.nOutputPlane,self.nOutputPlane)
 
    self.output = torch.zeros(self.nOutputPlane,input:size(2),input:size(3))
-
    for i=1,input:size(2) do
       self.column_row = i
       for j=1,input:size(3) do
@@ -68,8 +67,8 @@ function LLCNet:forwardSingleColumn(input,B,sigma,lambda,ones_B)
    -- d
    local temp1 = x*ones_B:t()-B
    local temp2 = temp1:t()*temp1
-   local d = torch.diag(temp2)
-   self.d[{column_row,column_column,{}}] = d / (sigma)
+   local d = torch.diag(temp2) / (sigma)
+   self.d[{column_row,column_column,{}}] = d 
    -- D
    local D = torch.diag(d)
    -- M
