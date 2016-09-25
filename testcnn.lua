@@ -7,6 +7,7 @@ outputsize = 1
 hidden1 = 2
 hidden2 = 5
 codelength = 5
+inputsize = 6
 model = nn.Sequential()
 model:add(nn.SpatialConvolution(1, hidden1, 3, 3))
 model:add(nn.ReLU())
@@ -18,8 +19,9 @@ model:add(nn.Linear(codelength*4,outputsize))
 criterion = nn.MSECriterion()
 
 function test()
-   print(model:get(2).gradInput)
-   input = torch.ones(1,5,5)
+   print(model:get(7).gradInput)
+   
+   input = torch.ones(1,inputsize,inputsize)
    print(model:forward(input))
    input = input*(-1)
    print(model:forward(input))
@@ -27,9 +29,9 @@ end
 
 --test()
 a = torch.zeros(1)
-for i = 2000,2000 do
+for i = 1,2000 do
   -- random sample
-  local input = (torch.rand(1,6,6)-0.5)*2     -- normally distributed example in 2d
+  local input = (torch.rand(1,inputsize,inputsize)-0.5)*2     -- normally distributed example in 2d
   local output= torch.Tensor(outputsize);
   if torch.sum(input) > 0 then  -- calculate label for XOR function
     output:fill(-1)
@@ -52,7 +54,7 @@ for i = 2000,2000 do
   -- (2) accumulate gradients
   model:backward(input, criterion:backward(model.output, output))
   -- (3) update parameters with a 0.01 learning rate
-  model:updateParameters(1)
+  model:updateParameters(0.01)
 end
 
 
