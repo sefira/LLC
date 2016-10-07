@@ -2,6 +2,7 @@ require 'nn'
 require 'mylayer'
 require 'torch'
 require 'LLCNet'
+require 'utils'
 timer = torch.Timer()
 
 outputsize = 1
@@ -31,7 +32,8 @@ function test0()
 end
 
 function test1()
-   for i = 1,10 do 
+   testnum = 5
+   for i = 1,testnum do 
      local input = (torch.rand(1,inputsize,inputsize)-0.5)*2
      local output= torch.Tensor(outputsize);
      if torch.sum(input) > 0 then  -- calculate label for XOR function
@@ -42,7 +44,19 @@ function test1()
 
      print(output[1])
      print(model:forward(input))
+     utils.append_feature_data(model:get(4).output)
    end
+   utils.save_feature_data()
+   
+   deepfeature = torch.load(feature_data_forSaveFilename)
+   modelmirror = nn.Sequential()
+   modelmirror:add(model:get(5))
+   modelmirror:add(model:get(6))
+   modelmirror:add(model:get(7))
+   for i = 1,testnum do 
+      print(modelmirror:forward(deepfeature[i]))
+   end
+
 end
 
 test0()
