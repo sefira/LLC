@@ -32,6 +32,7 @@ function test0()
 end
 
 function test1()
+   utils.clear_feature_data ()
    testnum = 5
    for i = 1,testnum do 
      local input = (torch.rand(1,inputsize,inputsize)-0.5)*2

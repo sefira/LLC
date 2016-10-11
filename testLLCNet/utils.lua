@@ -1,7 +1,7 @@
 feature_data_forSave = {}
 feature_data_forSaveFilename = "../res/deep_cnn_feature.dat"
 
--- some function for save deep feature during CNN forward
+-- a set of functions for save deep feature during CNN forward
 function utils.set_feature_data_filename(filename)
 	feature_data_forSaveFilename = filename
 end
@@ -20,7 +20,10 @@ function utils.save_feature_data ()
 end
 
 -- function for read deep feature file which already saved in ../res by above function
-function utils.reshape_deepfeature_from_file(filename)
+-- then reshape W*H*D to N*D
+-- don't manually call it
+-- called by utils.save_deep_feature_to_csv()
+function utils._reshape_deepfeature_from_file(filename)
    local filename = filename or feature_data_forSaveFilename
    print("reshape deep feature from file " .. feature_data_forSaveFilename)
    local data = torch.load(feature_data_forSaveFilename)
@@ -45,7 +48,7 @@ end
 function utils.save_deep_feature_to_csv(filename)
    local filename = filename or feature_data_forSaveFilename
    print("save deep feature to csv " .. feature_data_forSaveFilename .. ".csv")
-   local feature_data = utils.reshape_deepfeature_from_file(filename)
+   local feature_data = utils._reshape_deepfeature_from_file(filename)
    local csvfile = assert(io.open(filename .. ".csv", "w")) -- open a file for serialization
 
    splitter = ","
@@ -66,9 +69,10 @@ end
 function utils.read_centroids(filename)
    csv2tensor = require 'csv2tensor'
    local filename = filename or "../res/centroids.csv"
-   training_tensor, column_names = csv2tensor.load(filename)
+   centroids_tensor, column_names = csv2tensor.load(filename)
    
-   return training_tensor, column_names   
+   -- return centroids_tensor
+   return centroids_tensor:t()
 end
 
 
