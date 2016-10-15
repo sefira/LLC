@@ -5,8 +5,7 @@
 require 'torch'   -- torch
 require 'image'   -- for color transforms
 require 'nn'      -- provides a normalization operator
-require 'gnuplot' -- display a image
---gmagent = require 'graphicsmagick'
+require 'csvigo'  -- load csv data set file
 
 ----------------------------------------------------------------------
 
@@ -23,23 +22,31 @@ function read_file (file)
     if not file_exists(file) then 
         return {} 
     end
-    lines = {}
-    for line in io.lines(file) do
-        lines[#lines + 1] = line
-    end
+    lines = csv.load({ path = file, header = "false", mode = "raw"})
+    header = table.remove(lines, 1)
     return lines
 end
 
+-- Preprocess an image before passing it to a Caffe model.
+-- We need to rescale from [0, 1] to [0, 255], convert from RGB to BGR,
+-- and subtract the mean pixel.
+function preprocess(img)
+  local mean_pixel = torch.DoubleTensor({103.939, 116.779, 123.68})
+  local perm = torch.LongTensor{3, 2, 1}
+  img = img:index(1, perm):mul(256.0)
+  mean_pixel = mean_pixel:view(3, 1, 1):expandAs(img)
+  img:add(-1, mean_pixel)
+  return img
+end
 
-height = 32
-width = 32
+image_size = 224
 -- read train data. iterate train.txt
-train_txt = read_file("../data/train.txt")
+train_csv = read_file("../data/train.csv")
 train_data = {}
-for i = 1, #train_txt do
+for i = 1, #train_csv do
     local res = {}
     --s = "data1/buxingyuan12/1/2_1.jpg 1"
-    for v in string.gmatch(train_txt[i], "[^%s]+") do
+    for v in string.gmatch(train_csv[i], "[^%s]+") do
         res[#res + 1] = v
     end
     filename = res[1]
@@ -52,11 +59,13 @@ for i = 1, #train_txt do
         if enableCuda then
             train_labels:cuda()
         else
-            train_labels:double()
+            train_labels:float()
         end
     end
-    -- here need to mul(255) due to torch will auto mul(1/255) for a jpg
-    local imageread = image.load("../data/" .. filename):mul(255)
+    -- here need to mul(255) due to torch will auto mul(1/255) for a jpg    
+	local content_image = image.load("../data/" .. filename, 3)
+	content_image = image.scale(content_image, image_size, 'bilinear')
+	local imageread = preprocess(content_image)
     --print(imageread:max())
     local train_image = imageread
     local train_data_temp
@@ -67,7 +76,7 @@ for i = 1, #train_txt do
         }
     else        
         train_data_temp = {
-            data = train_image:double(),
+            data = train_image:float(),
             labels = train_labels
         }
     end
@@ -78,17 +87,17 @@ for i = 1, #train_txt do
 end
 
 -- read test data. iterate test.txt
-test_txt = read_file("../data/test.txt")
+test_csv = read_file("../data/test.csv")
 test_data = {}
-for i = 1, #test_txt do
+for i = 1, #test_csv do
     local res = {}
     --s = "data1/buxingyuan12/1/2_1.jpg 1"
-    for v in string.gmatch(test_txt[i], "[^%s]+") do
+    for v in string.gmatch(test_csv[i], "[^%s]+") do
         res[#res + 1] = v
     end
     filename = res[1]
     local test_labels
-    if ClassNULL then
+    if ClassNLL then
         test_labels = res[2] + 1 -- test_labels = 1 or 2
     else
         test_labels = torch.Tensor(2):zero() -- test_labels = 01 or 10
@@ -96,11 +105,13 @@ for i = 1, #test_txt do
         if enableCuda then
             test_labels:cuda()
         else
-            test_labels:double()
+            test_labels:float()
         end
     end
-    -- here need to mul(255) due to torch will auto mul(1/255) for a jpg
-    local imageread = image.load("../data/" .. filename):mul(255)
+    -- here need to mul(255) due to torch will auto mul(1/255) for a jpg    
+	local content_image = image.load("../data/" .. filename, 3)
+	content_image = image.scale(content_image, image_size, 'bilinear')
+	local imageread = preprocess(content_image)
     --print(imageread:max())
     local test_image = imageread
     local test_data_temp
@@ -109,9 +120,9 @@ for i = 1, #test_txt do
             data = test_image:cuda(),
             labels = test_labels
         }
-    else
+    else        
         test_data_temp = {
-            data = test_image:double(),
+            data = test_image:float(),
             labels = test_labels
         }
     end
@@ -121,6 +132,6 @@ for i = 1, #test_txt do
     end
 end
 
-trsize = #train_txt
-tesize = #test_txt
+trsize = #train_csv
+tesize = #test_csv
 

@@ -1,35 +1,24 @@
 require 'nn'
-require 'mylayer'
 require 'torch'
 require 'LLCNet'
 require 'utils'
-timer = torch.Timer()
 
-outputsize = 1
-hidden1 = 2
-hidden2 = 5
-codelength = 5
-inputsize = 6
-columnsize = (inputsize == 5) and 1 or 4
-model = nn.Sequential()
-model:add(nn.SpatialConvolution(1, hidden1, 3, 3))
-model:add(nn.ReLU())
-model:add(nn.SpatialConvolution(hidden1, hidden2, 3, 3))
-model:add(nn.ReLU())
-model:add(nn.LLCNet(hidden2,codelength))
-model:add(nn.Reshape(codelength*columnsize))
-model:add(nn.Linear(codelength*columnsize,outputsize))
-criterion = nn.MSECriterion()
-
-function test0()
-   --print(model:get(7).gradInput)
-   -- target = -1
-   input = torch.ones(1,inputsize,inputsize)
-   print(model:forward(input))
-   -- target = 1
-   input = input*(-1)
-   print(model:forward(input))
-end
+if useVGG then
+    require 'loadcaffe'
+    local proto_file = 'models/VGG_ILSVRC_19_layers_deploy.prototxt'
+    local model_file = 'models/VGG_ILSVRC_19_layers.caffemodel'
+    local loadcaffe_backend = 'nn'
+    model = loadcaffe.load(proto_file, model_file, loadcaffe_backend):float()
+else
+  model = nn.Sequential()                  -- intend to simulate VGG output size
+  model:add(nn.SpatialConvolution(3, 512, 3, 3)) -- 224 * 224 * 512
+  model:add(nn.ReLU())
+  model:add(nn.SpatialMaxPooling(2,2,2,2)) -- 112 * 112 * 512
+  model:add(nn.SpatialMaxPooling(2,2,2,2)) -- 56 * 56 * 512
+  model:add(nn.SpatialMaxPooling(2,2,2,2)) -- 28 * 28 * 512
+  model:add(nn.SpatialMaxPooling(2,2,2,2)) -- 14 * 14 * 512
+  model:add(nn.SpatialMaxPooling(2,2,2,2)) -- 7 * 7 * 512
+  model:float()
 
 function test1()
    utils.clear_feature_data ()
@@ -59,38 +48,3 @@ function test1()
    end
 
 end
-
-test0()
-a = torch.zeros(1)
-for i = 1999,2000 do  
-print(i)  
-  -- random sample
-  local input = (torch.rand(1,inputsize,inputsize)-0.5)*2     -- normally distributed example in 2d
-  local output= torch.Tensor(outputsize);
-  if torch.sum(input) > 0 then  -- calculate label for XOR function
-    output:fill(-1)
-  else
-    output:fill(1)
-  end
-
-  -- feed it to the neural network and the criterion
-  criterion:forward(model:forward(input), output)
-  a = model.output:ne(model.output)
-  if(a[1] == 1) then
-      print(i)
-      test()
-      break
-  end
-  -- train over this example in 3 steps
-  -- (1) zero the accumulation of the gradients
-  model:zeroGradParameters()
-  -- (2) accumulate gradients
-  model:backward(input, criterion:backward(model.output, output))
-  --dofile 'testscript.lua'
-  -- (3) update parameters with a 0.01 learning rate
-  model:updateParameters(0.01)
-end
-
---test0()
-
-print('Time elapsed for LLC: ' .. timer:time().real .. ' seconds')
